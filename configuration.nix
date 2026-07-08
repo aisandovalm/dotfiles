@@ -28,6 +28,7 @@
   nix-homebrew = {
     enable = true;
     inherit user;
+    autoMigrate = true;
   };
   homebrew = {
     enable = true;
@@ -42,4 +43,5 @@
       "claude-code"
     ];
   };
+  home-manager.backupFileExtension = "backup";
 }

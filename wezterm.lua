@@ -7,8 +7,8 @@ local config = wezterm.config_builder()
 -- This is where you actually apply your config choices.
 
 -- Initial window geometry — large centered window with desktop visible around it
---config.initial_cols = 220
---config.initial_rows = 50
+config.initial_cols = 220
+config.initial_rows = 50
 
 -- Font and color scheme
 config.color_scheme = 'rose-pine-moon'
