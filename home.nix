@@ -2,6 +2,40 @@
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
+
+  # Personal Claude Code skills actually live in the protex-intelligence/brain
+  # repo, not in ~/.claude. These entries just recreate the symlinks that used
+  # to be set up by hand, so a fresh machine gets them automatically as long
+  # as that repo is cloned at the path below. If it isn't cloned yet, these
+  # will be dangling symlinks until you clone it.
+  brainDir = "${config.home.homeDirectory}/repositories/protex-intelligence/brain";
+
+  brainSkills = [
+    "ask-questions-if-underspecified"
+    "deploy-to-dev-device"
+    "device-check"
+    "fleet-inventory-sync"
+    "git-commit-per-file"
+    "greengrass-release"
+    "maintenance-window"
+    "pdt-cycle-planner"
+    "protex-brand-docs"
+    "protex-design-system"
+    "protex-pr-reviewer"
+    "rollout-check"
+    "rollout-status-sync"
+  ];
+  brainPlugins = [ "proharness" ];
+
+  brainSkillLinks = builtins.listToAttrs (map (n: {
+    name = ".claude/skills/${n}";
+    value.source = config.lib.file.mkOutOfStoreSymlink "${brainDir}/skills/${n}";
+  }) brainSkills);
+
+  brainPluginLinks = builtins.listToAttrs (map (n: {
+    name = ".claude/skills/${n}";
+    value.source = config.lib.file.mkOutOfStoreSymlink "${brainDir}/plugins/${n}";
+  }) brainPlugins);
 in
 
 {
@@ -54,19 +88,21 @@ in
   };
 
   # Edit-in-place: the real file stays in my repo, ~/.config just points at it.
-  home.file.".config/wezterm".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
-  home.file.".config/nvim".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/nvim";
-  home.file.".config/herdr".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/herdr";
-  home.file.".claude/settings.json".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/settings.json";
+  home.file = {
+    ".config/wezterm".source =
+      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
+    ".config/nvim".source =
+      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/nvim";
+    ".config/herdr".source =
+      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/herdr";
+    ".claude/settings.json".source =
+      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/settings.json";
 
-  home.file.".claude/CLAUDE.md".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
-  home.file.".codex/AGENTS.md".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
-  home.file.".config/opencode/AGENTS.md".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+    ".claude/CLAUDE.md".source =
+      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+    ".codex/AGENTS.md".source =
+      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+    ".config/opencode/AGENTS.md".source =
+      config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+  } // brainSkillLinks // brainPluginLinks;
 }

@@ -43,5 +43,4 @@
       "claude-code"
     ];
   };
-  home-manager.backupFileExtension = "backup";
 }
