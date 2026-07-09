@@ -1,41 +1,33 @@
-{ config, pkgs, user, ... }:
+{ config, pkgs, lib, user, ... }:
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
 
   # Personal Claude Code skills actually live in the protex-intelligence/brain
-  # repo, not in ~/.claude. These entries just recreate the symlinks that used
-  # to be set up by hand, so a fresh machine gets them automatically as long
-  # as that repo is cloned at the path below. If it isn't cloned yet, these
-  # will be dangling symlinks until you clone it.
+  # repo, not in ~/.claude. Every subdirectory of brain/skills and
+  # brain/plugins is discovered at rebuild time and symlinked in - add a
+  # skill to that repo, `git pull` it, run ./rebuild.sh, and it just shows up
+  # here. No name list to maintain in this file. If the brain repo isn't
+  # cloned yet, this evaluates to an empty list instead of failing the build.
   brainDir = "${config.home.homeDirectory}/repositories/protex-intelligence/brain";
 
-  brainSkills = [
-    "ask-questions-if-underspecified"
-    "deploy-to-dev-device"
-    "device-check"
-    "fleet-inventory-sync"
-    "git-commit-per-file"
-    "greengrass-release"
-    "maintenance-window"
-    "pdt-cycle-planner"
-    "protex-brand-docs"
-    "protex-design-system"
-    "protex-pr-reviewer"
-    "rollout-check"
-    "rollout-status-sync"
-  ];
-  brainPlugins = [ "proharness" ];
+  listSubdirs = dir:
+    if builtins.pathExists dir
+    then builtins.attrNames (lib.filterAttrs (n: t: t == "directory") (builtins.readDir dir))
+    else [ ];
+
+  brainSkillNames = listSubdirs "${brainDir}/skills";
+  brainPluginNames = listSubdirs "${brainDir}/plugins";
 
   brainSkillLinks = builtins.listToAttrs (map (n: {
     name = ".claude/skills/${n}";
     value.source = config.lib.file.mkOutOfStoreSymlink "${brainDir}/skills/${n}";
-  }) brainSkills);
+  }) brainSkillNames);
 
   brainPluginLinks = builtins.listToAttrs (map (n: {
     name = ".claude/skills/${n}";
     value.source = config.lib.file.mkOutOfStoreSymlink "${brainDir}/plugins/${n}";
-  }) brainPlugins);
+  }) brainPluginNames);
 in
 
 {

@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dotfiles Field Guide</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <span class="kicker">dotfiles / docs</span>
+    <h1>The <span class="accent">Dummy-Proof</span> Field Guide</h1>
+    <p class="subtitle">
+      Everything you need to actually drive this repo day to day: adding apps, teaching your
+      agents new tricks, and using WezTerm, herdr, and Neovim without googling the same
+      keybinding for the tenth time.
+    </p>
+  </header>
+
+  <nav class="toc">
+    <span class="kicker">Jump to</span>
+    <ol>
+      <li><a href="#overview">How this repo fits together</a></li>
+      <li><a href="#install-app">Installing a new app</a></li>
+      <li><a href="#install-skill">Installing a skill or plugin</a></li>
+      <li><a href="#agents-md">Updating AGENTS.md</a></li>
+      <li><a href="#wezterm">Using WezTerm</a></li>
+      <li><a href="#herdr">Using herdr</a></li>
+      <li><a href="#nvim">Using Neovim</a></li>
+    </ol>
+  </nav>
+
+  <section id="overview">
+    <h2><span class="num">0</span> How this repo fits together</h2>
+    <p>
+      This is a <strong>nix-darwin + home-manager</strong> setup: one repo, one command
+      (<code>./rebuild.sh</code>), and your Mac ends up configured the same way every time.
+      Two files decide what's declarative:
+    </p>
+    <div class="grid-2">
+      <div class="card">
+        <h4>configuration.nix</h4>
+        <p>System-level: macOS defaults (dark mode, key repeat, dock) and every
+        <strong>Homebrew</strong> app you want installed.</p>
+      </div>
+      <div class="card">
+        <h4>home.nix</h4>
+        <p>User-level: shell, aliases, prompt, Nix CLI packages, and the symlinks that wire
+        <code>home/</code> config files into your real <code>~/.config</code>.</p>
+      </div>
+    </div>
+    <p>
+      Most of the files under <code>home/</code> (WezTerm, Neovim, herdr, Claude settings) are
+      <strong>live symlinks</strong>, not copies. Editing them here edits your real, running
+      config immediately &mdash; no rebuild required. You only run <code>./rebuild.sh</code> when you
+      change a <em>package list</em> or a <em>system default</em>, i.e. anything in
+      <code>configuration.nix</code>, <code>home.nix</code>, or <code>flake.nix</code>.
+    </p>
+    <div class="callout tip">
+      <span class="label">Rule of thumb</span>
+      Editing a config file under <code>home/.config/...</code>? Just save it, it's already live.
+      Editing an array or package list in a <code>.nix</code> file? Run <code>./rebuild.sh</code> afterward.
+    </div>
+  </section>
+
+  <section id="install-app">
+    <h2><span class="num">1</span> Installing a new app</h2>
+    <p>Everything installed on this Mac is declared somewhere in this repo &mdash; nothing is installed
+    "by hand" and forgotten. Where you add a new app depends on what kind of app it is.</p>
+
+    <h3>1a. A normal GUI app (has an icon, lives in /Applications)</h3>
+    <p>These are <strong>Homebrew casks</strong>, declared in <code>configuration.nix</code>:</p>
+    <pre><code>homebrew.casks = [
+  "1password"
+  "firefox"
+  "obsidian"
+  # ...add your new app here, alphabetically-ish
+];</code></pre>
+    <ol>
+      <li>Find the exact cask name: <code>brew search --casks &lt;app name&gt;</code></li>
+      <li>Open <code>configuration.nix</code>, add the name as a new string inside <code>casks = [ ... ]</code></li>
+      <li>Save the file, then run <code>./rebuild.sh</code> from the repo root</li>
+    </ol>
+
+    <h3>1b. A command-line tool</h3>
+    <p>Two sub-cases:</p>
+    <ul>
+      <li><strong>It exists in Nixpkgs</strong> (most common CLI tools do &mdash; check with
+        <code>nix search nixpkgs &lt;tool&gt;</code> or <a href="https://search.nixos.org/packages">search.nixos.org</a>):
+        add it to <code>home.packages</code> in <code>home.nix</code>, next to <code>ripgrep</code>, <code>fd</code>, <code>jq</code>, etc.</li>
+      <li><strong>It's Homebrew-only</strong> (no Nix package exists): add it to <code>homebrew.brews</code>
+        in <code>configuration.nix</code>, the same array that already contains <code>"herdr"</code>.</li>
+    </ul>
+
+    <div class="callout warn">
+      <span class="label">Read this before your first rebuild</span>
+      <code>configuration.nix</code> sets <code>homebrew.onActivation.cleanup = "zap"</code>. Every
+      <code>./rebuild.sh</code> run <strong>uninstalls any Homebrew cask or formula that isn't listed</strong>
+      in <code>brews</code>/<code>casks</code>. If you install something with plain
+      <code>brew install</code> outside this repo, it disappears on the next rebuild unless you
+      also add it here. This is deliberate &mdash; it keeps the machine reproducible &mdash; but it
+      will surprise you once if you don't know about it.
+    </div>
+
+    <h3>Quick reference</h3>
+    <table>
+      <tr><th>What you're installing</th><th>Where it goes</th><th>After editing</th></tr>
+      <tr><td>GUI app / .app bundle</td><td><code>configuration.nix</code> &rarr; <code>homebrew.casks</code></td><td><code>./rebuild.sh</code></td></tr>
+      <tr><td>CLI tool, in Nixpkgs</td><td><code>home.nix</code> &rarr; <code>home.packages</code></td><td><code>./rebuild.sh</code></td></tr>
+      <tr><td>CLI tool, Homebrew-only</td><td><code>configuration.nix</code> &rarr; <code>homebrew.brews</code></td><td><code>./rebuild.sh</code></td></tr>
+    </table>
+  </section>
+
+  <section id="install-skill">
+    <h2><span class="num">2</span> Installing a new Claude Code skill or plugin</h2>
+    <p>
+      A <strong>skill</strong> is a folder of instructions (a <code>SKILL.md</code> file, optionally with
+      supporting scripts) that Claude Code can invoke like a slash command. A <strong>plugin</strong> is a
+      packaged bundle that can contain several skills plus agents, hooks, and MCP servers, installed
+      from a "marketplace" repo.
+    </p>
+
+    <p>
+      There are really three different situations here, and the right move is different for
+      each. Skim the table, then read the case that matches you.
+    </p>
+    <table>
+      <tr><th>Situation</th><th>Where it lives</th><th>What you do</th></tr>
+      <tr><td>A new skill/plugin appears in the <strong>company brain repo</strong></td><td><code>protex-intelligence/brain</code></td><td><a href="#case-a">Nothing in this repo &mdash; it's automatic</a></td></tr>
+      <tr><td>You write a skill <strong>yourself, from scratch</strong></td><td>Your choice</td><td><a href="#case-b">Decide: disposable, or durable in the brain repo</a></td></tr>
+      <tr><td>You want someone else's skill from a <strong>third-party repo</strong></td><td>Somewhere on GitHub, not yours</td><td><a href="#case-c">Copy it in, then decide: disposable or vendored into dotfiles</a></td></tr>
+    </table>
+
+    <h3 id="case-a">Case A &mdash; something new lands in the company brain repo</h3>
+    <p>
+      Your personal skills don't live inside <code>dotfiles</code> at all &mdash; they live in a
+      separate private repo, <code>protex-intelligence/brain</code>. <code>home.nix</code>
+      symlinks them into <code>~/.claude/skills/</code>, and as of this repo's current setup, it
+      does so by <strong>scanning the brain repo's <code>skills/</code> and <code>plugins/</code>
+      folders at rebuild time</strong> instead of keeping a hand-maintained name list:
+    </p>
+    <pre><code>listSubdirs = dir:
+  if builtins.pathExists dir
+  then builtins.attrNames (lib.filterAttrs (n: t: t == "directory") (builtins.readDir dir))
+  else [ ];
+
+brainSkillNames  = listSubdirs "${brainDir}/skills";
+brainPluginNames = listSubdirs "${brainDir}/plugins";</code></pre>
+    <p>In plain English: every folder that exists under <code>brain/skills/</code> or
+    <code>brain/plugins/</code> gets its own symlink under <code>~/.claude/skills/</code>,
+    automatically, with no name list to keep in sync.</p>
+    <div class="callout tip">
+      <span class="label">So when a teammate adds a new skill to brain&hellip;</span>
+      <ol>
+        <li><code>git pull</code> inside <code>~/repositories/protex-intelligence/brain</code></li>
+        <li><code>./rebuild.sh</code> in this repo</li>
+      </ol>
+      That's it &mdash; <strong>you never touch <code>home.nix</code> for this case.</strong> The
+      new skill's folder is discovered and symlinked automatically. This trades away
+      per-skill curation (anything in that shared repo becomes available the moment you rebuild,
+      you don't get to review it one by one first) for zero maintenance, which is the
+      deliberate choice made here.
+    </div>
+
+    <h3 id="case-b">Case B &mdash; you're writing a skill yourself, from scratch</h3>
+    <div class="grid-2">
+      <div class="card">
+        <h4>Quick and disposable</h4>
+        <p>Create <code>~/.claude/skills/&lt;name&gt;/SKILL.md</code> directly:</p>
+        <pre><code>---
+description: One line describing when to use this skill
+---
+
+Instructions for Claude go here.</code></pre>
+        <p>Works immediately, no rebuild. It's untracked by any repo though &mdash; it won't
+        survive a fresh machine, and nobody else gets it.</p>
+      </div>
+      <div class="card">
+        <h4>Durable (recommended)</h4>
+        <p>Write the same <code>SKILL.md</code> straight into the brain repo, e.g.
+        <code>brain/skills/&lt;name&gt;/SKILL.md</code>, and commit it there. Because Case A's
+        auto-discovery scans that repo's folders, the very next <code>./rebuild.sh</code> picks
+        it up &mdash; no separate registration step, and it now survives a fresh machine and is
+        shareable with teammates.</p>
+      </div>
+    </div>
+
+    <h3 id="case-c">Case C &mdash; a third-party skill from someone else's repo</h3>
+    <p>
+      Worked example: you want <a href="https://github.com/mattpocock/skills/tree/main/skills/engineering/grill-with-docs"><code>grill-with-docs</code></a>
+      from <code>mattpocock/skills</code>, a repo that has nothing to do with you or your company.
+    </p>
+    <ol>
+      <li>
+        <strong>Get the files onto your disk.</strong> It's just a folder containing a
+        <code>SKILL.md</code> (and maybe supporting files) &mdash; clone the whole source repo
+        somewhere temporary and copy out only the one skill folder you want:
+        <pre><code>git clone https://github.com/mattpocock/skills /tmp/mattpocock-skills
+cp -r /tmp/mattpocock-skills/skills/engineering/grill-with-docs ~/.claude/skills/grill-with-docs
+rm -rf /tmp/mattpocock-skills</code></pre>
+        At this point it already works &mdash; Claude Code will discover it on the next session.
+      </li>
+      <li>
+        <strong>Decide if you want it to survive a fresh machine.</strong> Left as-is under
+        <code>~/.claude/skills/grill-with-docs</code>, it's disposable: fine for "let me try this
+        out," gone the next time you rebuild a Mac from scratch, and it won't get upstream
+        updates unless you manually repeat step 1.
+      </li>
+      <li>
+        <strong>To make it durable (recommended if you'll actually keep using it),</strong> vendor
+        the copied folder into <em>this</em> dotfiles repo instead of leaving it loose in
+        <code>~/.claude</code>, then point a symlink at it &mdash; the exact same one-off pattern
+        <code>home.nix</code> already uses for WezTerm, Neovim, and herdr:
+        <pre><code># 1. move the copied folder into this repo instead of ~/.claude
+mv ~/.claude/skills/grill-with-docs "$HOME/.dotfiles/home/.claude/skills/grill-with-docs"
+
+# 2. add ONE entry to home.nix's home.file block:
+".claude/skills/grill-with-docs".source =
+  config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.claude/skills/grill-with-docs";</code></pre>
+        Then <code>./rebuild.sh</code> once to wire up the symlink. From then on it's a live
+        symlink again &mdash; edit the vendored copy in place, no rebuild needed for content
+        changes, and it's committed and reproducible like everything else here.
+      </li>
+    </ol>
+    <div class="callout warn">
+      <span class="label">Don't do this instead</span>
+      Don't add a third-party skill's name to <code>brainSkills</code> or reach for the brain
+      repo's auto-discovery for it &mdash; that scanning is scoped to the company's own repo path
+      and has nothing to do with unrelated third-party sources. Third-party and from-scratch
+      personal skills that don't belong in the company repo get their own direct
+      <code>home.file</code> entry, one line per skill, as shown above.
+    </div>
+
+    <h3>Plugins and marketplaces (the stock Claude Code mechanism)</h3>
+    <p>
+      If what you want is packaged as a whole <strong>plugin</strong> (bundles skills + agents +
+      hooks + MCP servers, distributed via a marketplace) rather than a bare skill folder, this
+      is a separate install channel that Claude Code manages itself &mdash; dotfiles doesn't need
+      to do anything for it:
+    </p>
+    <pre><code>/plugin marketplace add &lt;org/repo, git URL, or local path&gt;
+/plugin install &lt;plugin-name&gt;@&lt;marketplace-name&gt;
+# or just run /plugin for the interactive browse-and-install UI</code></pre>
+    <p>
+      Installed plugin skills are namespaced, e.g. <code>/proharness:template-feature</code>
+      instead of a bare <code>/template-feature</code>. Installed-plugin state lives in
+      <code>~/.claude/plugins/</code> (cache), tracked in <code>~/.claude/settings.json</code>
+      (user-wide) or a project's <code>.claude/settings.json</code> /
+      <code>.claude/settings.local.json</code>.
+    </p>
+    <div class="callout">
+      <span class="label">Reproducibility gap, on purpose</span>
+      Unlike the skill patterns above, nothing in this repo re-runs <code>/plugin marketplace
+      add</code>/<code>/plugin install</code> for you on a fresh machine &mdash; that state lives
+      inside Claude Code's own config, not in a file this repo symlinks. If you install a
+      marketplace plugin you want to keep, jot the marketplace + plugin name down somewhere
+      memorable (this repo's <code>home/AGENTS.md</code> is a reasonable place) so you remember
+      to redo those two commands after <code>bootstrap.sh</code> on a new Mac.
+    </div>
+  </section>
+
+  <section id="agents-md">
+    <h2><span class="num">3</span> Updating AGENTS.md (for this repo or a new one)</h2>
+    <p>
+      Two different <code>AGENTS.md</code>-shaped files matter here, and it's easy to conflate them:
+    </p>
+    <table>
+      <tr><th>File</th><th>Scope</th><th>Purpose</th></tr>
+      <tr><td><code>AGENTS.md</code> (repo root)</td><td>This dotfiles repo only</td><td>Notes to any agent editing <em>this repo</em> &mdash; e.g. "don't soften the Homebrew zap setting."</td></tr>
+      <tr><td><code>home/AGENTS.md</code></td><td>Global, every repo</td><td>Your personal standing instructions, symlinked out to Claude, Codex, and opencode alike.</td></tr>
+    </table>
+    <p>
+      Claude Code's own instructions file is literally named <code>CLAUDE.md</code> &mdash; it does not
+      natively read a file called <code>AGENTS.md</code>. Codex and opencode <em>do</em> read
+      <code>AGENTS.md</code> natively. That's why <code>home.nix</code> points three different
+      filenames at the one real file:
+    </p>
+    <pre><code>".claude/CLAUDE.md".source          = mkOutOfStoreSymlink "home/AGENTS.md";
+".codex/AGENTS.md".source           = mkOutOfStoreSymlink "home/AGENTS.md";
+".config/opencode/AGENTS.md".source = mkOutOfStoreSymlink "home/AGENTS.md";</code></pre>
+    <p>
+      Because these are live symlinks, <strong>editing <code>home/AGENTS.md</code> in this repo instantly
+      updates your global policy for all three tools</strong> &mdash; no rebuild needed, it just takes
+      effect the next time you start a session.
+    </p>
+
+    <h3>Updating your global policy</h3>
+    <p>Open <code>home/AGENTS.md</code>, edit it directly, save. Done.</p>
+
+    <h3>Bootstrapping AGENTS.md/CLAUDE.md in a different project</h3>
+    <table>
+      <tr><th>Situation</th><th>What to do</th></tr>
+      <tr><td>Brand new repo, no file yet</td><td><code>cd</code> into it, launch <code>claude</code>, run <code>/init</code>. It scans the codebase (build commands, structure, conventions) and writes a project <code>CLAUDE.md</code>.</td></tr>
+      <tr><td>Repo already has an <code>AGENTS.md</code> (shared with Codex) but no <code>CLAUDE.md</code></td><td>Run <code>/init</code> anyway &mdash; Claude Code detects the existing <code>AGENTS.md</code> and folds the relevant parts into the <code>CLAUDE.md</code> it generates. You don't hand-copy anything.</td></tr>
+      <tr><td>Repo already has a <code>CLAUDE.md</code> that's gone stale</td><td>Run <code>/init</code> again &mdash; it treats the existing file as a draft and proposes edits rather than blindly overwriting it. Review the diff before accepting.</td></tr>
+    </table>
+
+    <div class="callout tip">
+      <span class="label">How the files stack</span>
+      Claude Code loads and <em>concatenates</em>, never overrides: your personal
+      <code>~/.claude/CLAUDE.md</code> (global) first, then the project's own
+      <code>CLAUDE.md</code>/<code>.claude/CLAUDE.md</code>, then a gitignored
+      <code>CLAUDE.local.md</code> if present, plus any subdirectory <code>CLAUDE.md</code> as you
+      touch files in those folders. Keep the global file to durable, project-independent
+      preferences (like this repo's <code>home/AGENTS.md</code> already does) and let each
+      project's own file hold project-specific facts.
+    </div>
+  </section>
+
+  <section id="wezterm">
+    <h2><span class="num">4</span> Using WezTerm</h2>
+    <p>Config: <code>home/.config/wezterm/wezterm.lua</code> (live symlink &mdash; edit and save, WezTerm
+    reloads it automatically, no rebuild needed).</p>
+
+    <div class="callout warn">
+      <span class="label">The one thing that will confuse you</span>
+      This config sets <code>disable_default_key_bindings = true</code>. Every macOS-Terminal-style
+      shortcut you're used to (Cmd+T for a new tab, Cmd+N for a new window, etc.) does
+      <strong>nothing</strong> unless it's explicitly listed in <code>config.keys</code> below.
+      Also watch out for the stray <code>wezterm.lua</code> sitting at the repo root &mdash; that's an
+      old draft, not the live config. Always edit the one under <code>home/.config/wezterm/</code>.
+    </div>
+
+    <h3>The two ways keys work here</h3>
+    <ul>
+      <li><strong>Direct shortcuts</strong> &mdash; press the whole combo at once, e.g. <span class="kbd">Ctrl Shift T</span>.</li>
+      <li><strong>Leader shortcuts</strong> &mdash; press <span class="kbd">Ctrl W</span> (the leader), release, <em>then</em> press
+      the second key within about a second, e.g. leader then <span class="kbd">c</span>.</li>
+    </ul>
+
+    <h3>Every binding in this config</h3>
+    <table>
+      <tr><th>Action</th><th>Keys</th></tr>
+      <tr><td>Paste from clipboard</td><td><span class="kbd">Cmd V</span></td></tr>
+      <tr><td>New tab</td><td><span class="kbd">Ctrl Shift T</span> or leader <span class="kbd">c</span></td></tr>
+      <tr><td>Close current tab (confirms)</td><td><span class="kbd">Ctrl Shift W</span></td></tr>
+      <tr><td>Cycle tabs forward / backward</td><td><span class="kbd">Ctrl Tab</span> / <span class="kbd">Ctrl Shift Tab</span></td></tr>
+      <tr><td>Jump to tab 1&ndash;9</td><td><span class="kbd">Alt 1</span> &hellip; <span class="kbd">Alt 9</span></td></tr>
+      <tr><td>Split pane horizontally / vertically</td><td>leader <span class="kbd">|</span> / leader <span class="kbd">-</span></td></tr>
+      <tr><td>Move focus left/right/up/down</td><td><span class="kbd">Ctrl Shift H/L/K/J</span></td></tr>
+      <tr><td>Close current pane (confirms)</td><td><span class="kbd">Ctrl Shift X</span></td></tr>
+    </table>
+
+    <h3>Look & feel, if you want to tweak it</h3>
+    <p>Color scheme <code>rose-pine-moon</code>, font Hack Nerd Font @ 13pt, 80% background opacity
+    with macOS blur, borderless-but-resizable window, tab bar hidden when there's only one tab.
+    All of it is just fields on the <code>config</code> table in the same file &mdash; change a
+    value, save, and the running window updates itself.</p>
+  </section>
+
+  <section id="herdr">
+    <h2><span class="num">5</span> Using herdr</h2>
+    <p>
+      herdr is a <strong>terminal workspace manager built for juggling AI coding agents</strong> &mdash; think
+      tmux, but its whole reason to exist is running several Claude Code / Codex sessions side by
+      side, watching their status (idle/working/blocked), and (via a local socket API) letting
+      scripts or agents drive panes programmatically. Config:
+      <code>home/.config/herdr/config.toml</code> (live symlink).
+    </p>
+
+    <h3>The mental model</h3>
+    <p><strong>Session</strong> (a persistent background process) contains <strong>Workspaces</strong>
+    (roughly: projects/screens) which contain <strong>Tabs</strong> which contain <strong>Panes</strong>
+    (splits, each running a shell or agent). Everything is reachable both from the keyboard and
+    from the CLI (<code>herdr workspace</code>, <code>herdr tab</code>, <code>herdr pane</code>,
+    <code>herdr agent</code>, &hellip;).</p>
+
+    <h3>Starting it</h3>
+    <pre><code>herdr                       # launch or attach to your default persistent session
+herdr --session work       # a separate named session
+herdr session list          # see what's running
+herdr session attach work   # reattach to a named session
+herdr status                 # sanity-check client/server versions</code></pre>
+
+    <h3>Prefix keys (this config's <code>[keys]</code> block)</h3>
+    <p>Like tmux: press <span class="kbd">Ctrl B</span> (the prefix), release, then the action key.</p>
+    <table>
+      <tr><th>Action</th><th>Keys</th></tr>
+      <tr><td>Focus pane left/down/up/right</td><td>prefix <span class="kbd">h</span> / <span class="kbd">j</span> / <span class="kbd">k</span> / <span class="kbd">l</span></td></tr>
+      <tr><td>Split horizontal / vertical</td><td>prefix <span class="kbd">"</span> / prefix <span class="kbd">%</span></td></tr>
+      <tr><td>New tab</td><td>prefix <span class="kbd">c</span></td></tr>
+      <tr><td>Close tab</td><td>prefix <span class="kbd">&amp;</span></td></tr>
+      <tr><td>Workspace picker</td><td>prefix <span class="kbd">w</span></td></tr>
+      <tr><td>Goto (fuzzy-jump to any pane/agent)</td><td>prefix <span class="kbd">g</span></td></tr>
+      <tr><td>Copy mode</td><td>prefix <span class="kbd">y</span> (then <span class="kbd">v</span>/<span class="kbd">space</span> to select, <span class="kbd">y</span>/<span class="kbd">Enter</span> to copy, <span class="kbd">q</span>/<span class="kbd">Esc</span> to cancel)</td></tr>
+    </table>
+    <p>Everything else in herdr keeps its stock default binding since this config doesn't override
+    it &mdash; see the cheat sheet for the full list (help, detach, new workspace, close pane, zoom,
+    resize, rename, and more).</p>
+
+    <div class="callout tip">
+      <span class="label">Why this matters for agent work</span>
+      Because herdr exposes panes and agent state over a socket API, you (or another agent) can
+      script things like "wait until the agent in pane 3 goes idle, then read its output" with
+      <code>herdr wait agent-status</code> / <code>herdr agent read</code>. Run
+      <code>herdr agent --help</code> and <code>herdr wait --help</code> to see the full surface.
+    </div>
+  </section>
+
+  <section id="nvim">
+    <h2><span class="num">6</span> Using Neovim</h2>
+    <p>Config: <code>home/.config/nvim/</code> (live symlink). <code>init.lua</code> loads three
+    files in order: <code>vim_config</code> (options), <code>plugin</code> (bootstraps
+    <a href="https://github.com/folke/lazy.nvim">lazy.nvim</a> and loads everything under
+    <code>lua/plugins/</code>), then <code>keys</code> (personal keymaps).</p>
+
+    <div class="callout tip">
+      <span class="label">If you've never used Vim</span>
+      Vim has two main modes: <strong>Normal mode</strong> (letters are commands, this is where you
+      land by default) and <strong>Insert mode</strong> (letters type text, entered with
+      <span class="kbd">i</span>, exited with the usual <span class="kbd">Esc</span> &mdash; except in
+      <em>this</em> config, see below). The leader key here is <span class="kbd">Space</span>.
+    </div>
+
+    <h3>This config's own keymaps</h3>
+    <table>
+      <tr><th>Keys</th><th>What it does</th></tr>
+      <tr><td><span class="kbd">Esc</span> (normal mode)</td><td><strong>Saves the file</strong> (runs <code>:w</code>). Not vanilla Vim behavior &mdash; worth remembering, since normally Esc in normal mode does nothing.</td></tr>
+      <tr><td><span class="kbd">Ctrl a</span></td><td>Select the entire file (<code>ggVG</code>)</td></tr>
+      <tr><td><span class="kbd">p</span> over a visual selection</td><td>Pastes without clobbering your clipboard register &mdash; you can paste the same thing repeatedly over different selections.</td></tr>
+    </table>
+
+    <h3>Options worth knowing</h3>
+    <p>2-space indents, hybrid line numbers (absolute on your line, relative elsewhere &mdash; makes
+    <code>5j</code>/<code>3k</code>-style jumps easy to count), case-insensitive search that
+    becomes case-sensitive the moment you type a capital letter, system clipboard shared by
+    default, 16-line scroll margin, and persistent undo across sessions (undo history survives
+    quitting and reopening a file).</p>
+
+    <h3>Plugins and their keys</h3>
+    <table>
+      <tr><th>Plugin</th><th>Keys</th><th>What it's for</th></tr>
+      <tr><td>which-key.nvim</td><td>&mdash;</td><td>Pause after pressing <span class="kbd">Space</span> and a popup shows every leader combo available. Your built-in cheat sheet.</td></tr>
+      <tr><td>oil.nvim</td><td><span class="kbd">Space e</span></td><td>File browser you edit like a normal text buffer (rename by editing text, delete by deleting a line).</td></tr>
+      <tr><td>snacks.nvim (picker)</td><td><span class="kbd">Space f</span></td><td>Fuzzy-find files</td></tr>
+      <tr><td>snacks.nvim (picker)</td><td><span class="kbd">Space s</span></td><td>Live grep / search text across the project</td></tr>
+      <tr><td>snacks.nvim (picker)</td><td><span class="kbd">Space b</span></td><td>Switch between open buffers</td></tr>
+      <tr><td>snacks.nvim (picker)</td><td><span class="kbd">g d</span></td><td>Go to LSP definition</td></tr>
+      <tr><td>neogit + diffview.nvim</td><td><span class="kbd">Space g</span></td><td>Full git UI &mdash; stage, commit, push, view diffs</td></tr>
+      <tr><td>gitsigns.nvim</td><td>&mdash;</td><td>Automatic: +/&minus; change markers in the gutter, inline blame text on the current line</td></tr>
+    </table>
+
+    <div class="callout">
+      <span class="label">First launch</span>
+      The very first time you run <code>nvim</code> after a fresh setup, lazy.nvim clones every
+      plugin from GitHub &mdash; that needs network access once. After that it's fully offline.
+    </div>
+  </section>
+
+  <div class="crosslinks">
+    <a href="cheatsheet.html">&#128196; Print-friendly cheat sheet &rarr;</a>
+    <a href="exercises.html">&#127939; Practice exercises &rarr;</a>
+  </div>
+
+  <footer>
+    Generated from this repo's actual config files &mdash; wezterm.lua, herdr's config.toml,
+    the nvim lua/ tree, home.nix, and configuration.nix. If you change one of those, this guide
+    may drift; treat the source files as ground truth.
+  </footer>
+
+</div>
+</body>
+</html>

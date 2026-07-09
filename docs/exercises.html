@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Practice Exercises: WezTerm, herdr, Neovim</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .drill {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+  .drill h4 { margin: 0 0 8px; color: #fff; }
+  .drill ol { margin: 8px 0 0; }
+  .drill .goal {
+    display: inline-block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bg);
+    background: var(--accent-soft);
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin-bottom: 8px;
+  }
+  .checkpoint {
+    border-left-color: var(--red);
+  }
+  .checkpoint .goal { background: var(--red); color: #fff; }
+  input[type="checkbox"] { margin-right: 8px; transform: translateY(1px); }
+  label.step { display: block; margin: 4px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <span class="kicker">dotfiles / docs</span>
+    <h1>Build the <span class="accent">Muscle Memory</span></h1>
+    <p class="subtitle">
+      Ten minutes a day beats one long session. Do these roughly in order &mdash; each block
+      assumes the one before it. The "checkpoint" drills are the real test: do them from memory,
+      cheat sheet closed.
+    </p>
+  </header>
+
+  <nav class="toc">
+    <span class="kicker">Jump to</span>
+    <ol>
+      <li><a href="#wezterm">WezTerm drills</a></li>
+      <li><a href="#herdr">herdr drills</a></li>
+      <li><a href="#nvim">Neovim drills</a></li>
+      <li><a href="#combined">Combined workflow drill</a></li>
+    </ol>
+  </nav>
+
+  <section id="wezterm">
+    <h2><span class="num">1</span> WezTerm</h2>
+
+    <div class="drill">
+      <span class="goal">Warm-up</span>
+      <h4>Tabs, without the mouse</h4>
+      <ol>
+        <li>Open a new tab with <span class="kbd">Ctrl Shift T</span>.</li>
+        <li>Open a second new tab, this time with leader (<span class="kbd">Ctrl W</span>, release, <span class="kbd">c</span>).</li>
+        <li>Jump straight to tab 1 with <span class="kbd">Alt 1</span>, then tab 3 with <span class="kbd">Alt 3</span>.</li>
+        <li>Cycle forward through all tabs with <span class="kbd">Ctrl Tab</span>, then backward with <span class="kbd">Ctrl Shift Tab</span>.</li>
+        <li>Close the extra tabs with <span class="kbd">Ctrl Shift W</span> until one is left.</li>
+      </ol>
+    </div>
+
+    <div class="drill">
+      <span class="goal">Core skill</span>
+      <h4>Split and navigate a 4-pane layout</h4>
+      <ol>
+        <li>Split horizontally: leader <span class="kbd">|</span>.</li>
+        <li>Split the new pane vertically: leader <span class="kbd">-</span>.</li>
+        <li>Move focus around with <span class="kbd">Ctrl Shift H/J/K/L</span> until you can land on
+        any of the panes without looking.</li>
+        <li>Split one more time so you have 4 panes total, then close one with <span class="kbd">Ctrl Shift X</span>.</li>
+      </ol>
+    </div>
+
+    <div class="drill checkpoint">
+      <span class="goal">Checkpoint &mdash; cheat sheet closed</span>
+      <h4>From a single tab, in under 30 seconds:</h4>
+      <ol>
+        <li>Open 2 more tabs, jump to tab 2 directly by number.</li>
+        <li>Split the current pane both ways so you have 3 panes.</li>
+        <li>Move focus to the top-left pane.</li>
+        <li>Close one pane and one tab, confirming both.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="herdr">
+    <h2><span class="num">2</span> herdr</h2>
+
+    <div class="drill">
+      <span class="goal">Warm-up</span>
+      <h4>Launch and get oriented</h4>
+      <ol>
+        <li>Run <span class="kbd">herdr</span> from any shell.</li>
+        <li>Press the prefix <span class="kbd">Ctrl B</span> then <span class="kbd">?</span> to see the full help overlay. Skim it once, then dismiss it.</li>
+        <li>Create a new workspace: prefix then <span class="kbd">Shift N</span>.</li>
+        <li>Open the workspace picker with prefix <span class="kbd">w</span> and switch back to your first workspace.</li>
+      </ol>
+    </div>
+
+    <div class="drill">
+      <span class="goal">Core skill</span>
+      <h4>Tabs, panes, and the prefix reflex</h4>
+      <ol>
+        <li>Inside a workspace, open a new tab: prefix <span class="kbd">c</span>.</li>
+        <li>Split it: prefix <span class="kbd">"</span> (horizontal), then prefix <span class="kbd">%</span> (vertical) on the new pane.</li>
+        <li>Move between the panes with prefix <span class="kbd">h j k l</span> until it's automatic.</li>
+        <li>Use goto: prefix <span class="kbd">g</span> to fuzzy-jump straight to a specific pane by name.</li>
+        <li>Close the extra tab: prefix <span class="kbd">&amp;</span>.</li>
+      </ol>
+    </div>
+
+    <div class="drill">
+      <span class="goal">Core skill</span>
+      <h4>Copy mode</h4>
+      <ol>
+        <li>Run something that prints a few lines of output (e.g. <span class="kbd">ls -la</span>).</li>
+        <li>Enter copy mode: prefix <span class="kbd">y</span>.</li>
+        <li>Start a selection with <span class="kbd">v</span>, move over a line or two, copy with <span class="kbd">y</span>.</li>
+        <li>Paste it back into the shell with <span class="kbd">Cmd V</span> (that's WezTerm's binding, not herdr's).</li>
+      </ol>
+    </div>
+
+    <div class="drill checkpoint">
+      <span class="goal">Checkpoint &mdash; cheat sheet closed</span>
+      <h4>From scratch:</h4>
+      <ol>
+        <li>Create a new workspace and give it a label.</li>
+        <li>Open a new tab, split it into 2 panes.</li>
+        <li>Copy a line of text from one pane using copy mode.</li>
+        <li>Detach from the session (prefix <span class="kbd">q</span>), then reattach with
+        <span class="kbd">herdr session attach &lt;name&gt;</span> from the shell.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="nvim">
+    <h2><span class="num">3</span> Neovim</h2>
+
+    <div class="drill">
+      <span class="goal">Warm-up</span>
+      <h4>The one weird trick in this config</h4>
+      <ol>
+        <li>Open any file with <span class="kbd">nvim somefile.txt</span>.</li>
+        <li>Press <span class="kbd">i</span>, type a sentence, then press <span class="kbd">Esc</span>.</li>
+        <li>Check the file on disk (in another pane) &mdash; it's already saved. That's this config's
+        <span class="kbd">Esc</span> &rarr; <span class="kbd">:w</span> remap. Do this five times with
+        different edits until reaching for Esc-to-save feels normal.</li>
+      </ol>
+    </div>
+
+    <div class="drill">
+      <span class="goal">Core skill</span>
+      <h4>Finding things without the mouse</h4>
+      <ol>
+        <li>From inside a project folder, open <span class="kbd">nvim</span>.</li>
+        <li>Press <span class="kbd">Space f</span> and open any file by typing part of its name.</li>
+        <li>Press <span class="kbd">Space s</span> and grep for a word you know exists somewhere in the project.</li>
+        <li>Press <span class="kbd">Space b</span> to jump between the files you've now got open as buffers.</li>
+        <li>Put your cursor on a function call and press <span class="kbd">g d</span> to jump to its definition.</li>
+      </ol>
+    </div>
+
+    <div class="drill">
+      <span class="goal">Core skill</span>
+      <h4>File browser and git, in-editor</h4>
+      <ol>
+        <li>Press <span class="kbd">Space e</span> to open oil.nvim. Notice it looks like a normal text buffer.</li>
+        <li>Rename a file by editing its text in that buffer and saving.</li>
+        <li>Back in a normal buffer, make a small edit and save it.</li>
+        <li>Press <span class="kbd">Space g</span> to open Neogit, stage the change, and write a commit.</li>
+      </ol>
+    </div>
+
+    <div class="drill checkpoint">
+      <span class="goal">Checkpoint &mdash; cheat sheet closed</span>
+      <h4>From an empty terminal:</h4>
+      <ol>
+        <li>Open Neovim in a project you know.</li>
+        <li>Find a file by name, then find a specific word by grepping.</li>
+        <li>Select the whole file with <span class="kbd">Ctrl a</span>, then undo the selection.</li>
+        <li>Make an edit, save it with <span class="kbd">Esc</span>, then open Neogit and commit it.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="combined">
+    <h2><span class="num">4</span> Combined workflow drill</h2>
+    <p>This is the one that matters &mdash; it's the actual shape of a normal working session,
+    chaining all three tools together. Do it without the cheat sheet once you can.</p>
+
+    <div class="drill checkpoint">
+      <span class="goal">Full loop</span>
+      <h4>A realistic 10-minute session</h4>
+      <ol>
+        <li>In WezTerm, open a new tab (<span class="kbd">Ctrl Shift T</span>) and run <span class="kbd">herdr</span>.</li>
+        <li>In herdr, create a workspace for a project and split its pane into two: one for an editor, one for a shell.</li>
+        <li>Focus the editor pane, launch <span class="kbd">nvim</span>, and use <span class="kbd">Space f</span> to open a file.</li>
+        <li>Make a small, real edit. Save with <span class="kbd">Esc</span>.</li>
+        <li>Open Neogit (<span class="kbd">Space g</span>), stage and commit the change.</li>
+        <li>Switch to the shell pane (herdr prefix <span class="kbd">h</span>/<span class="kbd">l</span>) and run a command against the repo (tests, a linter, <span class="kbd">git log</span>, anything).</li>
+        <li>Copy a line of that output using herdr's copy mode (prefix <span class="kbd">y</span>).</li>
+        <li>Open a second WezTerm tab for something unrelated, then jump back to the first with <span class="kbd">Alt 1</span>.</li>
+        <li>Detach from herdr (prefix <span class="kbd">q</span>) and reattach from the shell to prove the session survived.</li>
+      </ol>
+    </div>
+
+    <div class="callout tip">
+      <span class="label">Once this feels boring</span>
+      You've built the muscle memory. From here it's just repetition on real work &mdash; the
+      combined drill above <em>is</em> a normal day, so the next rep is tomorrow's actual session.
+    </div>
+  </section>
+
+  <div class="crosslinks">
+    <a href="guide.html">&larr; Full guide</a>
+    <a href="cheatsheet.html">Cheat sheet &rarr;</a>
+  </div>
+
+  <footer>
+    Keep this doc and the cheat sheet open side by side the first few times &mdash; the cheat
+    sheet for "what's the key", this one for "what to actually practice."
+  </footer>
+
+</div>
+</body>
+</html>
