@@ -43,12 +43,10 @@
       # already declared
       "wezterm"
       "claude-code"
-
       # added from /Applications audit (2026-07-08) - see dotfiles README/commit
       # for what was deliberately left out (MDM-managed apps, free App Store
       # apps, and a few with no verified Homebrew cask).
       "1password"
-      "adobe-acrobat-reader"
       "anaconda"
       "android-file-transfer"
       "claude"
@@ -63,6 +61,8 @@
       "slack"
       "tailscale-app"
       "visual-studio-code"
+      # new ones
+      "mac-mouse-fix"
     ];
   };
 }
