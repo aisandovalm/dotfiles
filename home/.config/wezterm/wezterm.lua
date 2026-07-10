@@ -43,6 +43,11 @@ config.macos_window_background_blur = 50
 
 -- Key bindings
 config.disable_default_key_bindings = true
+
+-- Both Option keys compose macOS special characters (´, ¨, €, etc), matching
+-- every other app on the system.
+config.send_composed_key_when_left_alt_is_pressed = true
+config.send_composed_key_when_right_alt_is_pressed = true
 config.leader = { key = "w", mods = "CTRL" }
 config.keys = {
   {
@@ -63,16 +68,17 @@ config.keys = {
   -- Cycle
   { key = 'Tab', mods = 'CTRL',       action = wezterm.action.ActivateTabRelative(1) },
   { key = 'Tab', mods = 'CTRL|SHIFT', action = wezterm.action.ActivateTabRelative(-1) },
-  -- Jump to tab by number
-  { key = '1', mods = 'ALT', action = wezterm.action.ActivateTab(0) },
-  { key = '2', mods = 'ALT', action = wezterm.action.ActivateTab(1) },
-  { key = '3', mods = 'ALT', action = wezterm.action.ActivateTab(2) },
-  { key = '4', mods = 'ALT', action = wezterm.action.ActivateTab(3) },
-  { key = '5', mods = 'ALT', action = wezterm.action.ActivateTab(4) },
-  { key = '6', mods = 'ALT', action = wezterm.action.ActivateTab(5) },
-  { key = '7', mods = 'ALT', action = wezterm.action.ActivateTab(6) },
-  { key = '8', mods = 'ALT', action = wezterm.action.ActivateTab(7) },
-  { key = '9', mods = 'ALT', action = wezterm.action.ActivateTab(8) },
+  -- Jump to tab by number (CMD, not ALT/Option — Option is reserved for
+  -- typing special characters like #, £, é, etc.)
+  { key = '1', mods = 'CMD', action = wezterm.action.ActivateTab(0) },
+  { key = '2', mods = 'CMD', action = wezterm.action.ActivateTab(1) },
+  { key = '3', mods = 'CMD', action = wezterm.action.ActivateTab(2) },
+  { key = '4', mods = 'CMD', action = wezterm.action.ActivateTab(3) },
+  { key = '5', mods = 'CMD', action = wezterm.action.ActivateTab(4) },
+  { key = '6', mods = 'CMD', action = wezterm.action.ActivateTab(5) },
+  { key = '7', mods = 'CMD', action = wezterm.action.ActivateTab(6) },
+  { key = '8', mods = 'CMD', action = wezterm.action.ActivateTab(7) },
+  { key = '9', mods = 'CMD', action = wezterm.action.ActivateTab(8) },
 
   -- ── Panes ────────────────────────────────────────────────────────────
   -- Split panes
