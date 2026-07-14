@@ -5,10 +5,12 @@ let
 
   # Personal Claude Code skills actually live in the protex-intelligence/brain
   # repo, not in ~/.claude. Every subdirectory of brain/skills and
-  # brain/plugins is discovered at rebuild time and symlinked in - add a
-  # skill to that repo, `git pull` it, run ./rebuild.sh, and it just shows up
-  # here. No name list to maintain in this file. If the brain repo isn't
-  # cloned yet, this evaluates to an empty list instead of failing the build.
+  # brain/plugins is discovered at rebuild time and symlinked into both
+  # ~/.claude/skills (Claude Code) and ~/.agents/skills (Codex and any other
+  # agent that reads that folder) - add a skill to that repo, `git pull` it,
+  # run ./rebuild.sh, and it just shows up for every agent. No name list to
+  # maintain in this file. If the brain repo isn't cloned yet, this evaluates
+  # to an empty list instead of failing the build.
   brainDir = "${config.home.homeDirectory}/repositories/protex-intelligence/brain";
 
   listSubdirs = dir:
@@ -19,15 +21,36 @@ let
   brainSkillNames = listSubdirs "${brainDir}/skills";
   brainPluginNames = listSubdirs "${brainDir}/plugins";
 
+  # Standalone skills link the same way into both targets.
   brainSkillLinks = builtins.listToAttrs (map (n: {
     name = ".claude/skills/${n}";
     value.source = config.lib.file.mkOutOfStoreSymlink "${brainDir}/skills/${n}";
   }) brainSkillNames);
 
+  agentsSkillLinks = builtins.listToAttrs (map (n: {
+    name = ".agents/skills/${n}";
+    value.source = config.lib.file.mkOutOfStoreSymlink "${brainDir}/skills/${n}";
+  }) brainSkillNames);
+
+  # Plugins link as a single folder into ~/.claude/skills, where Claude Code
+  # auto-loads them as <plugin>@skills-dir and namespaces their skills as
+  # <plugin>:<skill>.
   brainPluginLinks = builtins.listToAttrs (map (n: {
     name = ".claude/skills/${n}";
     value.source = config.lib.file.mkOutOfStoreSymlink "${brainDir}/plugins/${n}";
   }) brainPluginNames);
+
+  # ~/.agents/skills has no plugin concept, so each plugin's child skills are
+  # linked in individually instead of the plugin folder as a whole.
+  brainPluginSkillPairs = builtins.concatLists (map
+    (pluginName: map (skillName: { plugin = pluginName; skill = skillName; })
+      (listSubdirs "${brainDir}/plugins/${pluginName}/skills"))
+    brainPluginNames);
+
+  agentsPluginSkillLinks = builtins.listToAttrs (map (p: {
+    name = ".agents/skills/${p.skill}";
+    value.source = config.lib.file.mkOutOfStoreSymlink "${brainDir}/plugins/${p.plugin}/skills/${p.skill}";
+  }) brainPluginSkillPairs);
 in
 
 {
@@ -40,6 +63,7 @@ in
     fd        # fast find
     fzf       # fuzzy finder
     jq        # json on the command line
+    gh        # github cli
     lazygit
     neovim
     # the font everything renders in
@@ -96,5 +120,5 @@ in
       config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
     ".config/opencode/AGENTS.md".source =
       config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
-  } // brainSkillLinks // brainPluginLinks;
+  } // brainSkillLinks // brainPluginLinks // agentsSkillLinks // agentsPluginSkillLinks;
 }
