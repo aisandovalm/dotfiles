@@ -63,6 +63,7 @@
       "visual-studio-code"
       # new ones
       "mac-mouse-fix"
+      "google-drive"
     ];
   };
 }
